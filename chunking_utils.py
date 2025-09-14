@@ -481,3 +481,76 @@ def create_semantic_chunks(chunks_content_dict, chunk_size):
         processed_chunks.append(source_record)
     
     return processed_chunks
+
+from io import BytesIO
+from fpdf import FPDF
+
+def srt_to_pdf_bytes(srt_string):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    
+    # Set default font
+    pdf.set_font("Arial", size=10)
+    
+    # Split the SRT string into blocks (each block is a subtitle entry)
+    blocks = srt_string.strip().split("\n\n")
+    for block in blocks:
+        lines = block.splitlines()
+        if len(lines) < 3:
+            continue  # skip malformed blocks
+        
+        # The first line is typically an index (ignored here)
+        timestamp = lines[1]  # second line is the timestamp
+        text = " ".join(lines[2:]).strip()  # join remaining lines as the subtitle text
+        
+        # Write the timestamp in bold
+        pdf.set_font("Arial", "B", 10)
+        pdf.cell(0, 10, timestamp, ln=True)
+        
+        # Write the transcript text in regular font using multi_cell for text wrapping
+        pdf.set_font("Arial", "", 10)
+        pdf.multi_cell(0, 10, text)
+        pdf.ln(5)  # add extra space after each block
+    
+    # Generate PDF output as a byte string (fpdf2 returns bytes when dest="S" is used)
+    pdf_bytes = pdf.output(dest="S").encode("latin1")
+    
+    # Wrap the byte string in a BytesIO object
+    return BytesIO(pdf_bytes)
+
+def split_markdown_by_token_limit(text, token_limit=100000, model="gpt-4", delimiter="<!-- PageNumber="):
+    # Initialize tiktoken encoding for the desired model
+    encoding = tiktoken.encoding_for_model("gpt-4")
+
+    # Step 1: Split the input by page breaks
+    sections = text.split(delimiter)
+
+    chunks = []
+    current_chunk = []
+    current_token_count = 0
+
+    for section in sections:
+        section = section.strip()
+        section_token_count = len(encoding.encode(section))
+
+        # If this section alone exceeds the token limit, raise warning or split further
+        if section_token_count > token_limit:
+            raise ValueError("A single section exceeds the token limit. Consider preprocessing it differently.")
+
+        # If adding the section keeps us under the limit, add it
+        if current_token_count + section_token_count <= token_limit:
+            current_chunk.append(section)
+            current_token_count += section_token_count
+        else:
+            # Save current chunk
+            chunks.append(delimiter.join(current_chunk))
+            # Start a new chunk
+            current_chunk = [section]
+            current_token_count = section_token_count
+
+    # Add the final chunk
+    if current_chunk:
+        chunks.append(delimiter.join(current_chunk))
+
+    return chunks

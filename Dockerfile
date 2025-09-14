@@ -6,12 +6,15 @@ ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true
 
 RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libavcodec-extra \
     build-essential \
     libffi-dev \
     libreoffice \
     libssl-dev \
     python-dev \
     curl \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /
