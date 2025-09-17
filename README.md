@@ -44,6 +44,10 @@ Configure the environment variables in your Azure Function App settings as follo
 | `AOAI_EMBEDDINGS_MODEL`      | Model for generating embeddings with Azure OpenAI         |
 | `AOAI_EMBEDDINGS_DIMENSIONS`      | Number of vector dimensions associated with the Azure OpenAI embedding model (1536 for `text-embedding-ada-002`)         |
 | `AOAI_GPT_VISION_MODEL`      | Azure OpenAI GPT-4 model with vision support (GPT-4o or GPT-4-Turbo w/ Vision) |
+| `AOAI_WHISPER_ENDPOINT`              | Endpoint for Azure OpenAI service with whisper deployment                       |
+| `AOAI_WHISPER_KEY`      | Key for Azure OpenAI service with whisper deployment         |
+| `AOAI_WHISPER_MODEL`      | Name of the deployed whisper model in your Azure OpenAI service         |
+| `AOAI_WHISPER_MODEL_TYPE`      | Model type for deployed whisper model (likely is `whisper-1`) |
 | `SEARCH_ENDPOINT`            | Endpoint for Azure AI Search service                      |
 | `SEARCH_KEY`                 | Key for Azure AI Search service                           |
 | `SEARCH_SERVICE_NAME`        | Name of the Azure AI Search service instance              |
