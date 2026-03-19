@@ -5,9 +5,29 @@ import json
 import openai
 import os
 from openai import AzureOpenAI
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 import requests
 import re
 import logging
+
+
+def _get_aoai_client(endpoint_env='AOAI_ENDPOINT', key_env='AOAI_KEY', api_version='2023-03-15-preview'):
+    """Returns an AzureOpenAI client using key or DefaultAzureCredential."""
+    api_key = os.environ.get(key_env, '')
+    endpoint = os.environ[endpoint_env]
+    if api_key:
+        return AzureOpenAI(azure_endpoint=endpoint, api_key=api_key, api_version=api_version)
+    token_provider = get_bearer_token_provider(DefaultAzureCredential(), 'https://cognitiveservices.azure.com/.default')
+    return AzureOpenAI(azure_endpoint=endpoint, azure_ad_token_provider=token_provider, api_version=api_version)
+
+
+def _get_aoai_headers():
+    """Returns HTTP headers for raw REST calls to Azure OpenAI."""
+    api_key = os.environ.get('AOAI_KEY', '')
+    if api_key:
+        return {'Content-Type': 'application/json', 'api-key': api_key}
+    token = DefaultAzureCredential().get_token('https://cognitiveservices.azure.com/.default').token
+    return {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
 
 
 def generate_embeddings(text, model_name=None):
@@ -21,15 +41,7 @@ def generate_embeddings(text, model_name=None):
         embeddings (list): The embeddings generated for the given text.
     """
 
-    # Configure OpenAI with Azure settings
-    openai.api_type = "azure"
-    openai.api_base = os.environ['AOAI_ENDPOINT']
-    openai.api_version = "2023-03-15-preview"
-    openai.api_key = os.environ['AOAI_KEY']
-
-    client = AzureOpenAI(
-        azure_endpoint=os.environ['AOAI_ENDPOINT'], api_key=os.environ['AOAI_KEY'], api_version="2023-03-15-preview"
-    )
+    client = _get_aoai_client()
 
     embedding_model = os.environ['AOAI_EMBEDDINGS_MODEL']
     if model_name is not None:
@@ -68,12 +80,6 @@ def get_transcription(filename):
         transcript (str): The transcription of the audio file.
     """
 
-    # Configure OpenAI with Azure settings
-    openai.api_type = "azure"
-    openai.api_base = os.environ['AOAI_WHISPER_ENDPOINT']
-    openai.api_key = os.environ['AOAI_WHISPER_KEY']
-    openai.api_version = "2023-09-01-preview"
-
     # Specify the model and deployment ID for the transcription
     model_name = os.environ['AOAI_WHISPER_MODEL_TYPE'] # "whisper-1"
     deployment_id =  os.environ['AOAI_WHISPER_MODEL']
@@ -87,9 +93,7 @@ def get_transcription(filename):
     # Initialize variable to track if the audio has been transcribed
     transcribed = False
 
-    client = AzureOpenAI(
-        api_key=os.environ['AOAI_WHISPER_KEY'], azure_endpoint=os.environ['AOAI_WHISPER_ENDPOINT'], api_version="2024-02-01"
-    )
+    client = _get_aoai_client(endpoint_env='AOAI_WHISPER_ENDPOINT', key_env='AOAI_WHISPER_KEY', api_version='2024-02-01')
 
 
     # Attempt to transcribe the audio, retrying on failure
@@ -143,14 +147,10 @@ def classify_image(b64_image_bytes):
     ]
 
     api_base = os.environ['AOAI_ENDPOINT']
-    api_key = os.environ['AOAI_KEY']
     deployment_name = os.environ['AOAI_GPT_VISION_MODEL']
 
     base_url = f"{api_base}openai/deployments/{deployment_name}" 
-    headers = {   
-        "Content-Type": "application/json",   
-        "api-key": api_key 
-    } 
+    headers = _get_aoai_headers()
     endpoint = f"{base_url}/chat/completions?api-version=2023-12-01-preview" 
     data = { 
         "messages": messages, 
@@ -212,14 +212,10 @@ def analyze_image(b64_image_bytes):
     ]
 
     api_base = os.environ['AOAI_ENDPOINT']
-    api_key = os.environ['AOAI_KEY']
     deployment_name = os.environ['AOAI_GPT_VISION_MODEL']
 
     base_url = f"{api_base}openai/deployments/{deployment_name}" 
-    headers = {   
-        "Content-Type": "application/json",   
-        "api-key": api_key 
-    } 
+    headers = _get_aoai_headers()
     endpoint = f"{base_url}/chat/completions?api-version=2023-12-01-preview" 
     data = { 
         "messages": messages, 
@@ -285,14 +281,10 @@ def generate_qna_pair_helper(content):
     ]
 
     api_base = os.environ['AOAI_ENDPOINT']
-    api_key = os.environ['AOAI_KEY']
     deployment_name = os.environ['AOAI_GPT_VISION_MODEL']
 
     base_url = f"{api_base}openai/deployments/{deployment_name}" 
-    headers = {   
-        "Content-Type": "application/json",   
-        "api-key": api_key 
-    } 
+    headers = _get_aoai_headers()
     endpoint = f"{base_url}/chat/completions?api-version=2023-12-01-preview" 
     data = { 
         "messages": messages, 

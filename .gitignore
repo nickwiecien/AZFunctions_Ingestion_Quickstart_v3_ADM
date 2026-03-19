@@ -176,3 +176,14 @@ txtav_scratch/*
 
 notebooks/.env
 local.settingsnwk.json
+
+# IaC/deployment outputs (contain secrets)
+scripts/deploy-outputs.json
+infra/main.json
+
+# Downloaded Function App logs
+funcapp-logs/
+funcapp-logs.zip
+
+# Benchmark output
+benchmark-*.png

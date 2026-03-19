@@ -1,5 +1,6 @@
 # from azure.ai.formrecognizer import DocumentAnalysisClient, AnalyzeResult
 from azure.core.credentials import AzureKeyCredential
+from azure.identity import DefaultAzureCredential
 import os
 import time
 from azure.ai.documentintelligence import DocumentIntelligenceClient
@@ -107,9 +108,16 @@ def extract_results(afr_result, source_file_name):
 
 # Analyze a document using Azure Document Intelligence's "prebuilt-document" model
 def analyze_pdf(data):
-
-    document_analysis_client = DocumentIntelligenceClient(endpoint=os.environ['DOC_INTEL_ENDPOINT'], 
-    credential=AzureKeyCredential(os.environ['DOC_INTEL_KEY']))
+    doc_intel_key = os.environ.get('DOC_INTEL_KEY', '')
+    if doc_intel_key:
+        credential = AzureKeyCredential(doc_intel_key)
+    else:
+        credential = DefaultAzureCredential()
+    
+    document_analysis_client = DocumentIntelligenceClient(
+        endpoint=os.environ['DOC_INTEL_ENDPOINT'], 
+        credential=credential
+    )
     json_result = {}
 
     processed = False
